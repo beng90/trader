@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  trader:
+    image: golang:1.18
+    command: go run cmd/trader/main.go
+    working_dir: /go/src/app/
+    env_file:
+      - trader.env
+    volumes:
+      - ../:/go/src/app
