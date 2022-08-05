@@ -56,6 +56,12 @@ func (s TraderService) Watch(ctx context.Context) error {
 		go func(index int) {
 			defer wg.Done()
 
+			s.logger.Debugf(
+				"TRADE  - Symbol: %s, OrderPrice: %s, OrderSize: %s",
+				trades[index].GetSymbol(),
+				trades[index].OrderPrice,
+				trades[index].OrderSize)
+
 			s.trade(trades[index])
 		}(i)
 	}
@@ -79,7 +85,7 @@ func (s TraderService) trade(trade models.Trade) error {
 		return err
 	}
 
-	s.logger.Debugf("ticker %+v", ticker)
+	s.logger.Debugf("TICKER  - Symbol: %.2f, BidPrice: %.2f, BidQty: %.2f", ticker.Symbol, ticker.BidPrice, ticker.BidQty)
 
 	err = s.CreateOrder(trade, *ticker)
 	if err != nil {
@@ -96,7 +102,7 @@ func (s TraderService) CreateOrder(trade models.Trade, ticker models.OrderBookTi
 		return nil
 	}
 
-	s.logger.Debugf("order book ticker found: %+v", ticker)
+	s.logger.Debugf("ORDER BOOK TICKER FOUND: Price: %.2f, Qty: %.2f\n", ticker.BidPrice, ticker.BidQty)
 
 	orderSize := trade.OrderSizeLeft
 	if ticker.BidQty < trade.OrderSizeLeft {
