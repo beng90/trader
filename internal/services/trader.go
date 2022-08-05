@@ -3,14 +3,15 @@ package services
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/beng90/trader/internal/models"
 	"github.com/beng90/trader/internal/repositories"
 	"github.com/beng90/trader/pkg/logus"
+	"github.com/google/uuid"
 )
 
-type Trader interface {
-}
+type Trader interface{}
 
 type TraderService struct {
 	logger              logus.Logger
@@ -47,56 +48,78 @@ func (s TraderService) Watch(ctx context.Context) error {
 
 	s.logger.Debug("trades", trades)
 
+	var wg sync.WaitGroup
+
 	for i := range trades {
-		ticker, err := s.orderBookTickerRepo.GetOrderBookTicker(trades[i].GetSymbol())
-		if err != nil {
-			s.logger.Error(err)
+		wg.Add(1)
 
-			return err
-		}
+		go func(index int) {
+			defer wg.Done()
 
-		if ticker == nil {
-			s.logger.Error(err)
+			s.trade(trades[index])
+		}(i)
+	}
 
-			return err
-		}
+	wg.Wait()
 
-		s.logger.Debugf("ticker %+v", ticker)
+	return nil
+}
 
-		if ticker.BidPrice >= trades[i].OrderPrice {
-			s.logger.Debugf("order book ticker found: %+v", ticker)
+func (s TraderService) trade(trade models.Trade) error {
+	ticker, err := s.orderBookTickerRepo.GetOrderBookTicker(trade.GetSymbol())
+	if err != nil {
+		s.logger.Error(err)
 
-			err := s.CreateOrder(trades[i], *ticker)
-			if err != nil {
-				s.logger.Error(err)
+		return err
+	}
 
-				return err
-			}
-		}
+	if ticker == nil {
+		s.logger.Error(err)
+
+		return err
+	}
+
+	s.logger.Debugf("ticker %+v", ticker)
+
+	err = s.CreateOrder(trade, *ticker)
+	if err != nil {
+		s.logger.Error(err)
+
+		return err
 	}
 
 	return nil
 }
 
 func (s TraderService) CreateOrder(trade models.Trade, ticker models.OrderBookTicker) error {
+	if ticker.BidPrice < trade.OrderPrice {
+		return nil
+	}
+
+	s.logger.Debugf("order book ticker found: %+v", ticker)
+
 	orderSize := trade.OrderSizeLeft
 	if ticker.BidQty < trade.OrderSizeLeft {
 		orderSize = ticker.BidQty
 	}
 
-	trade.OrderSizeLeft = trade.OrderSizeLeft - orderSize
-	err := s.tradeRepo.Update(trade)
-	if err != nil {
-		return err
-	}
+	orderId := uuid.New()
 
 	order := models.Order{
+		OrderId:    orderId.String(),
 		TradeId:    trade.ID,
 		OrderSize:  orderSize,
 		OrderPrice: ticker.BidPrice,
 	}
 
-	err = s.orderRepo.Create(order)
+	err := s.orderRepo.Create(order)
+	if err != nil {
+		return err
+	}
+
+	trade.OrderSizeLeft = trade.OrderSizeLeft - orderSize
+
+	err = s.tradeRepo.Update(trade)
 	if err != nil {
 		return err
 	}

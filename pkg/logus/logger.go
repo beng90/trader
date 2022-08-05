@@ -2,6 +2,8 @@ package logus
 
 import (
 	"log"
+
+	"gorm.io/gorm/logger"
 )
 
 type Logger interface {
@@ -12,7 +14,8 @@ type Logger interface {
 }
 
 type StdLogger struct {
-	logger *log.Logger
+	logger   *log.Logger
+	logLevel logger.LogLevel
 }
 
 func NewStdLogger(logger *log.Logger) *StdLogger {
@@ -20,6 +23,10 @@ func NewStdLogger(logger *log.Logger) *StdLogger {
 }
 
 func (l *StdLogger) Debug(v ...any) {
+	if l.logLevel != logger.Info {
+		return
+	}
+
 	l.logger.Println(v)
 }
 
