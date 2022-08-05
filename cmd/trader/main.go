@@ -35,6 +35,7 @@ func main() {
 	l := log.New(os.Stdout, "", 5)
 	stdLogger := logus.NewStdLogger(l)
 
+	l.Println("DB path:", cfg.Db.Path)
 	dbConfig := &gorm.Config{Logger: logger.Default.LogMode(logger.Warn)}
 	db, err := gorm.Open(sqlite.Open(cfg.Db.Path), dbConfig)
 	checkErr(err)

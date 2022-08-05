@@ -4,6 +4,7 @@ services:
   trader:
     image: golang:1.18
     command: go run cmd/trader/main.go
+    platform: linux/arm64
     working_dir: /go/src/app/
     env_file:
       - trader.env
