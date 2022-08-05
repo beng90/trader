@@ -57,7 +57,7 @@ func (s TraderService) Watch(ctx context.Context) error {
 			defer wg.Done()
 
 			s.logger.Debugf(
-				"TRADE  - Symbol: %s, OrderPrice: %s, OrderSize: %s",
+				"TRADE  - Symbol: %s, OrderPrice: %.2f, OrderSize: %.2f",
 				trades[index].GetSymbol(),
 				trades[index].OrderPrice,
 				trades[index].OrderSize)
@@ -85,7 +85,7 @@ func (s TraderService) trade(trade models.Trade) error {
 		return err
 	}
 
-	s.logger.Debugf("TICKER  - Symbol: %.2f, BidPrice: %.2f, BidQty: %.2f", ticker.Symbol, ticker.BidPrice, ticker.BidQty)
+	s.logger.Debugf("TICKER  - Symbol: %s, BidPrice: %.2f, BidQty: %.2f", ticker.Symbol, ticker.BidPrice, ticker.BidQty)
 
 	err = s.CreateOrder(trade, *ticker)
 	if err != nil {
