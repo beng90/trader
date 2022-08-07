@@ -1,4 +1,4 @@
-package repositories
+package orderbookticker
 
 import (
 	"context"
@@ -6,33 +6,31 @@ import (
 	"strconv"
 
 	"github.com/adshao/go-binance/v2"
-	"github.com/beng90/trader/internal/models"
 	"github.com/beng90/trader/pkg/logus"
 )
 
 var ErrOrderBookTickerNotFound = errors.New("cannot find order book ticker")
 
-type OrderBookTicker interface {
-	GetOrderBookTicker(symbol string) (*models.OrderBookTicker, error)
+type RepositoryInterface interface {
+	FindOneBySymbol(ctx context.Context, symbol string) (*OrderBookTicker, error)
 }
 
-type OrderBookTickerRepository struct {
+type Repository struct {
 	client *binance.Client
 	logger logus.Logger
 }
 
-func NewOrderBookTickerRepository(
+func NewRepository(
 	client *binance.Client,
 	logger logus.Logger,
-) OrderBookTickerRepository {
-	return OrderBookTickerRepository{client, logger}
+) Repository {
+	return Repository{client, logger}
 }
 
-func (r OrderBookTickerRepository) GetOrderBookTicker(symbol string) (*models.OrderBookTicker, error) {
+func (r Repository) FindOneBySymbol(ctx context.Context, symbol string) (*OrderBookTicker, error) {
 	results, err := r.client.NewListBookTickersService().
 		Symbol(symbol).
-		Do(context.Background())
-
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +67,7 @@ func (r OrderBookTickerRepository) GetOrderBookTicker(symbol string) (*models.Or
 		return nil, err
 	}
 
-	return &models.OrderBookTicker{
+	return &OrderBookTicker{
 		Symbol:   symbol,
 		BidPrice: bidPrice,
 		BidQty:   bidQty,

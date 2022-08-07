@@ -1,9 +1,10 @@
-package models
+package trade
 
 import (
 	"fmt"
 	"time"
 
+	"github.com/beng90/trader/internal/order"
 	"github.com/google/uuid"
 )
 
@@ -16,7 +17,7 @@ type Trade struct {
 	OrderSizeCurrency  string
 	OrderPrice         float64
 	OrderPriceCurrency string
-	Orders             []*Order `gorm:"foreignKey:TradeId"`
+	Orders             []*order.Order `gorm:"foreignKey:TradeId"`
 }
 
 func (m Trade) GetSymbol() string {

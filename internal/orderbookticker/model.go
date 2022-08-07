@@ -1,4 +1,4 @@
-package models
+package orderbookticker
 
 type OrderBookTicker struct {
 	Symbol   string

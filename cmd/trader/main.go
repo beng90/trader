@@ -9,9 +9,9 @@ import (
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/beng90/trader/internal/config"
-	"github.com/beng90/trader/internal/models"
-	"github.com/beng90/trader/internal/repositories"
-	"github.com/beng90/trader/internal/services"
+	"github.com/beng90/trader/internal/order"
+	"github.com/beng90/trader/internal/orderbookticker"
+	"github.com/beng90/trader/internal/trade"
 	"github.com/beng90/trader/pkg/logus"
 	"github.com/kelseyhightower/envconfig"
 	"gorm.io/driver/sqlite"
@@ -40,20 +40,21 @@ func main() {
 	db, err := gorm.Open(sqlite.Open(cfg.Db.Path), dbConfig)
 	checkErr(err)
 
-	err = db.AutoMigrate(&models.Trade{}, &models.Order{})
+	err = db.AutoMigrate(&trade.Trade{}, &order.Order{})
 	checkErr(err)
 
 	client := binance.NewClient(cfg.Binance.ApiKey, cfg.Binance.ApiSecret)
 
-	orderBookTickerRepository := repositories.NewOrderBookTickerRepository(client, stdLogger)
-	tradeRepository := repositories.NewTradeRepository(db, stdLogger)
-	orderRepository := repositories.NewOrderRepository(db, stdLogger)
-	traderService := services.NewTraderService(stdLogger, orderBookTickerRepository, tradeRepository, orderRepository)
+	orderBookTickerRepository := orderbookticker.NewRepository(client, stdLogger)
+	tradeRepository := trade.NewRepository(db, stdLogger)
+	orderRepository := order.NewRepository(db, stdLogger)
+	orderCreator := trade.NewOrderCreator(stdLogger, tradeRepository, orderRepository)
+	trader := trade.NewTrader(stdLogger, orderBookTickerRepository, tradeRepository, orderCreator)
 
 	for range time.Tick(time.Millisecond * time.Duration(cfg.Frequency)) {
-		err = traderService.Watch(ctx)
+		err = trader.Watch(ctx)
 		if err != nil {
-			fmt.Errorf("%s\n", err)
+			_ = fmt.Errorf("%s\n", err)
 		}
 	}
 }

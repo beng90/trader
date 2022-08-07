@@ -1,30 +1,30 @@
-package repositories
+package trade
 
 import (
-	"github.com/beng90/trader/internal/models"
 	"github.com/beng90/trader/pkg/logus"
 	"gorm.io/gorm"
 )
 
-type Trade interface {
-	GetActiveTrades() ([]models.Trade, error)
-	Update(trade models.Trade) error
+type RepositoryInterface interface {
+	FindAllActive() ([]Trade, error)
+	Update(trade Trade) error
 }
 
-type TradeRepository struct {
+type Repository struct {
 	db     *gorm.DB
 	logger logus.Logger
 }
 
-func NewTradeRepository(
+func NewRepository(
 	db *gorm.DB,
 	logger logus.Logger,
-) TradeRepository {
-	return TradeRepository{db, logger}
+) Repository {
+	return Repository{db, logger}
 }
 
-func (r TradeRepository) GetActiveTrades() ([]models.Trade, error) {
-	var res []models.Trade
+// FindAllActive returns all trades to be sold, it means trades with order_size_left > 0
+func (r Repository) FindAllActive() ([]Trade, error) {
+	var res []Trade
 
 	if result := r.db.Find(&res, "order_size_left > 0"); result.Error != nil {
 		r.logger.Error(result.Error)
@@ -35,7 +35,7 @@ func (r TradeRepository) GetActiveTrades() ([]models.Trade, error) {
 	return res, nil
 }
 
-func (r TradeRepository) Update(trade models.Trade) error {
+func (r Repository) Update(trade Trade) error {
 	if result := r.db.Save(trade); result.Error != nil {
 		r.logger.Error(result.Error)
 
